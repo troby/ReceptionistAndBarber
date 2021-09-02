@@ -25,35 +25,42 @@ type Customer struct {
 func main() {
 	incoming  := []string{}
 	customers := []*Customer{}
-	ctx       := context.TODO()
-	done      := make(chan bool, 1)
 
+	ctx, cancel := context.WithCancel(context.TODO())
 	log.Print("initializing")
-	err := Init(ctx, incoming, customers, done)
+	err := Init(ctx, incoming, customers)
 	if err != nil {
 		log.Fatalf("Init failed: %s", err)
 	}
 	log.Print("init completed")
-	<-done
+	time.Sleep(20 * time.Second)
+	log.Print("cancelling sleeps")
+	cancel()
 	log.Print("done!")
 }
 
-func Init(ctx context.Context, incoming []string, customers []*Customer, done chan bool) error {
+func Init(ctx context.Context, incoming []string, customers []*Customer) error {
 	log.Print("show incoming")
 	show(incoming)
 	log.Print("show customers")
 	show(customers)
 	log.Print("start sleeper")
-	go sleeper(ctx, done)
+	go sleeper(ctx)
 	return nil
 }
 
-func sleeper(ctx context.Context, done chan bool) {
-	_ = ctx
-	log.Printf("sleeping in sleeper")
-	time.Sleep(3 * time.Second)
-	log.Printf("sleeper writing to done")
-	done <- true
+func sleeper(ctx context.Context) {
+	n := 1
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			log.Printf("sleeping in sleeper %d times.", n)
+			time.Sleep(3 * time.Second)
+			n += 1
+		}
+	}
 }
 
 func show(c interface{}) {

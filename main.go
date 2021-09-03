@@ -11,7 +11,6 @@ package main
 import (
 	"log"
 	"fmt"
-	"sync"
 	"time"
 	"context"
 )
@@ -19,7 +18,6 @@ import (
 type Customer struct {
 	Name	string
 	Type	string
-	Wait	sync.Mutex
 }
 
 func main() {

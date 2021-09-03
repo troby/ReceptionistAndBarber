@@ -1,4 +1,4 @@
-* Processes
+### Processes
  - main calls Init
    - Init creates barber subroutine
      - barber subroutine starts 5 barber threads that wait for customers to arrive by channel

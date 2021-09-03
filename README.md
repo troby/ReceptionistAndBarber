@@ -1,0 +1,14 @@
+* Processes
+ - main calls Init
+   - Init creates barber subroutine
+     - barber subroutine starts 5 barber threads that wait for customers to arrive by channel
+      - barber subroutine waits for barbers to finish all customers via WaitGroup
+   - Init creates receptionist subroutine
+     - receptionist subroutine continues to parse a list of names randomly assigning a Style as it creates a Customer each time
+     - receptionist waits for ctx.Done() and continually sends newly created Customer objects to the customers channel
+ - main sleeps for a few seconds allowing customers to be created
+ - main sends cancel signal to ctx jobs
+   - receptionist quits
+   - barber threads finish their queue and send wg.Done to barber subroutine
+   - barber subroutine sends true to done channel
+ - main receives final done and exits

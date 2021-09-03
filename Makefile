@@ -1,7 +1,7 @@
 build:
 	go build
 
-test:
+run:
 	./ReceptionistAndBarber
 
 clean:

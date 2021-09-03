@@ -1,11 +1,3 @@
-/*
- Initialize:
-   - create []incoming : slice of new arrivals (possible customers)
-   - create []customers : slice of customers waiting for a haircut
-   - create Receptionist() : lifetime thread that creates customers out of incoming data
-   - create Barbers() : lifetime threads that check for customers and performs Validate, Ownership, and Provision
-*/
-
 package main
 
 import (
@@ -13,54 +5,89 @@ import (
 	"fmt"
 	"time"
 	"context"
+	"math/rand"
 )
 
 type Customer struct {
 	Name	string
-	Type	string
+	Style	string
 }
 
 func main() {
-	incoming  := []string{}
-	customers := []*Customer{}
+	incoming  := []string{`bob`, `connie`, `jack`, `linda`, `paul`}
+	customers := make(chan *Customer, 1)
+	done      := make(chan bool, 1)
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	log.Print("initializing")
-	err := Init(ctx, incoming, customers)
+	err := Init(ctx, incoming, customers, done)
 	if err != nil {
 		log.Fatalf("Init failed: %s", err)
 	}
 	log.Print("init completed")
-	time.Sleep(20 * time.Second)
-	log.Print("cancelling sleeps")
+
+	time.Sleep(5 * time.Second)
+	log.Print("canceling tasks")
 	cancel()
-	log.Print("done!")
+
+	<-done
+	log.Print("Done!")
 }
 
-func Init(ctx context.Context, incoming []string, customers []*Customer) error {
-	log.Print("show incoming")
-	show(incoming)
-	log.Print("show customers")
-	show(customers)
-	log.Print("start sleeper")
-	go sleeper(ctx)
+func Init(ctx context.Context, incoming []string, customers chan *Customer, done chan bool) error {
+	log.Printf("starting barbers")
+	startBarbers(ctx, customers, done)
+	log.Print("starting receptionist")
+	go startReceptionist(ctx, incoming, customers)
 	return nil
 }
 
-func sleeper(ctx context.Context) {
-	n := 1
+func startReceptionist(ctx context.Context, incoming []string, customers chan *Customer) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			log.Printf("sleeping in sleeper %d times.", n)
-			time.Sleep(3 * time.Second)
-			n += 1
+			for _, name := range incoming {
+				newStyle := randomStyle()
+				c := new(Customer)
+				c.SetName(name)
+				c.SetStyle(newStyle)
+				customers <- c
+			}
 		}
 	}
 }
 
-func show(c interface{}) {
-	fmt.Printf("%v\n", c)
+func startBarbers(ctx context.Context, customers chan *Customer, done chan bool) {
+	for i := 1; i <= 5; i++ {
+		go runBarber(ctx, customers)
+	}
+	done <- true
+}
+
+func runBarber(ctx context.Context, customers chan *Customer) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case c := <-customers:
+			fmt.Printf("customer: %s, style: %s\n", c.Name, c.Style)
+		}
+	}
+}
+
+func randomStyle() string {
+	styles := []string{`cut`, `trim`, `perm`}
+	index := rand.Intn(3)
+	//log.Printf("random index: %d", index)
+	return styles[index]
+}
+
+func (c *Customer) SetName(name string) {
+	c.Name = name
+}
+
+func (c *Customer) SetStyle(style string) {
+	c.Style = style
 }

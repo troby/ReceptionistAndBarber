@@ -12,10 +12,9 @@ func startReceptionist(ctx context.Context, incoming []string, customers chan *C
 			return
 		default:
 			for _, name := range incoming {
-				newStyle := randomStyle()
 				c := new(Customer)
 				c.SetName(name)
-				c.SetStyle(newStyle)
+				c.SetStyle(randomStyle())
 				customers <- c
 			}
 		}
